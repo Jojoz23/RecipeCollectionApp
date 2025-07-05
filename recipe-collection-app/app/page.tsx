@@ -1,103 +1,143 @@
+"use client";
 import Image from "next/image";
+import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { api } from "../convex/_generated/api";
+import { useMutation } from "convex/react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  interface Recipe {
+    title: string;
+    ingredients: string[];
+    instructions: string[];
+    imageID?: string;
+    rating: number;
+  }
+
+  const [recipeForm, setRecipeForm] = useState<boolean>(false);
+  const [image, setImage] = useState<File | null>(null);
+  const [placeholderId, setPlaceholderId] = useState<string | null>(null);
+
+  const addRecipe = useMutation(api.recipe.addRecipe);
+  const generateUploadUrl = useMutation(api.recipe.generateUploadUrl);
+
+  const handleAddRecipe = () => {
+    setRecipeForm(!recipeForm);
+  }
+
+  const handleSubmitRecipe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+
+    const url = await generateUploadUrl();
+
+    let id = null;
+    if (image) {
+      const result = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": image?.type,
+        },
+        body: image ? image : undefined,
+      });
+
+      const { storageId } = await result.json();
+      console.log("Image uploaded successfully:", storageId);
+      id = storageId;
+
+    }
+    else {
+      if (!placeholderId) {
+
+        const placeholderResponse = await fetch("/placeholder.png");
+        const placeholderBlob = await placeholderResponse.blob();
+
+        const result = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "image/png",
+          },
+          body: placeholderBlob,
+        });
+
+        const { storageId } = await result.json();
+        console.log("Placeholder image uploaded successfully:", storageId);
+        setPlaceholderId(storageId);
+        id = storageId;
+
+      }
+      else {
+        id = placeholderId;
+      }
+
+    }
+
+    console.log(formData);
+    console.log("Image ID:", id);
+
+    const newRecipe: Recipe = {
+      title: formData.get("Title") as string,
+      ingredients: (formData.get("Ingredients") as string).split(",").map(ing => ing.trim()),
+      instructions: (formData.get("Instructions") as string).split(";").map(inst => inst.trim()),
+      imageID: id,
+      rating: Number(formData.get("Rating")),
+    };
+
+    await addRecipe(newRecipe);
+    setRecipeForm(false);
+    setImage(null);
+  }
+
+
+  return (
+    <main className="flex flex-col items-center justify-between p-16 overflow-y-auto bg-blue-300 min-h-screen w-full m-0 pt-3">
+      <h1 className="text-blue-950 text-xl font-bold mb-2">Recipe Collection App</h1>
+      {recipeForm ? (
+        <div className="bg-white p-4 rounded shadow-md w-full max-w-md inset-0 z-50">
+          <h2 className="text-lg font-semibold mb-4 text-blue-950 flex justify-center">Add New Recipe</h2>
+          <form onSubmit={handleSubmitRecipe} className="flex flex-col space-y-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Title</label>
+              <input name="Title" type="text" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black p-2" />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Ingredients <span className="text-black text-xs">(Separate ingrediants by a comma)</span></label>
+              <textarea name="Ingredients" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black p-2" rows={2}></textarea>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700">Instructions <span className="text-black text-xs">(Separate ingrediants by a semicolon)</span></label>
+              <textarea name="Instructions" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black p-2" rows={2}></textarea>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Rating</label>
+              <select name="Rating" id="Rating" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 mb-2 text-black p-2">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Image</label>
+              <input type="file" accept="image/*" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black p-2" onChange={(event) => setImage(event.target.files![0])} />
+              <img
+                src={image ? URL.createObjectURL(image) : "/placeholder.png"}
+                alt="Recipe Image"
+                className="mt-2 w-full h-48 object-contain rounded-md"
+              />
+            </div>
+            <button type="submit" className="bg-blue-950 text-white px-4 py-2 rounded hover:bg-blue-700">Save Recipe</button>
+          </form>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      ) : (<div className="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+      </div>)}
+
+      <button className="bg-blue-950 text-white px-4 py-2 rounded hover:bg-blue-700 fixed bottom-4 right-4" onClick={handleAddRecipe}>
+        {recipeForm ? <X /> : <Plus />}
+      </button>
+    </main>
   );
 }
