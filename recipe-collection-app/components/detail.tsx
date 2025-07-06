@@ -87,6 +87,7 @@ export default function Detailied({ recipe, setCurrentRecipeId }: DetailProps) {
   if (!current) return <p className="text-center">Loading...</p>;
 
   // If user wants to update information, show the update from otherwise display the current recipe's info.
+  // Users also have button to close the single view page, delete the recipe and edit the recipe.
   return (
     !updateForm ? (
       <div className="bg-white p-4 rounded shadow-md w-full flex flex-col justify-center items-center">
