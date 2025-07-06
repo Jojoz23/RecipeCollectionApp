@@ -19,12 +19,14 @@ export default function Card({ recipe, index, setCurrentRecipeId, currentRecipeI
     ? useQuery(api.recipe.getRecipeImage, { id: recipe.imageID })
     : "/placeholder.png";
 
+  // Each recipe card shows the image, title and rating of the provided recipe.
+  // Query the storage to get the recipe's associated images url.
   return (
     <div
       key={index}
       className="bg-white p-4 rounded shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer"
-      onClick={() => {setCurrentRecipeId(recipe._id)
-        console.log("Selected Recipe ID:", currentRecipeId);
+      onClick={() => {
+        setCurrentRecipeId(recipe._id)
       }}
     >
       <h2 className="text-lg font-semibold mb-2 text-blue-950">{recipe.title}</h2>

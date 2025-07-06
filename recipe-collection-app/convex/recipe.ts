@@ -16,13 +16,14 @@ export const addRecipe = mutation({
             title: args.title,
             ingredients: args.ingredients,
             instructions: args.instructions,
-            imageID: args.imageID || null, // Allow imageID to be optional
+            imageID: args.imageID || null,
             rating: args.rating,
             deletable: args.deletable ?? true
         });
     }
 })
 
+// Generate an url for images to be uploaded to
 export const generateUploadUrl = mutation({
     handler: async (ctx) => {
         return await ctx.storage.generateUploadUrl();
@@ -34,6 +35,7 @@ export const queryRecipes = query({
     }
 });
 
+// Use the image id of the provided recipe and file storage, to get the recipe's image url
 export const getRecipeImage = query({
     args: { id: v.string() },
     handler: async (ctx, args) => {
@@ -41,6 +43,8 @@ export const getRecipeImage = query({
         }
     });
 
+// Use a recipe's id to retrieve it's information, so that any associated image can be deleted,
+// before deleting the recipe.
 export const deleteRecipe = mutation({
     args: { id: v.id("recipes") },
     handler: async (ctx, args) => {
@@ -54,6 +58,8 @@ export const deleteRecipe = mutation({
     }
 });
 
+// Get the recipe id and update the associated recipe with only the updated fields.
+// Delete the old image, if the image is updated.
 export const editRecipe = mutation({
     args: {
         id: v.id("recipes"),
