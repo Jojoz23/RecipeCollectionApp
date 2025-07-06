@@ -1,20 +1,26 @@
 "use client";
 import { api } from "../convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { X, Trash2 } from "lucide-react";
+import type { Id } from "../convex/_generated/dataModel";
 
 type DetailProps = {
   recipe: {
-    _id?: string;
+    _id?: Id<"recipes">;
     title: string;
     imageID?: string;
     rating: number;
     ingredients: string[];
     instructions: string[];
+    deletable?: boolean;
   };
   setCurrentRecipeId: (id: string) => void;
 };
 
 export default function Detailied({recipe, setCurrentRecipeId}: DetailProps) {
+
+
+    const deleteRecipe = useMutation(api.recipe.deleteRecipe);    
     const url = recipe.imageID
         ? useQuery(api.recipe.getRecipeImage, { id: recipe.imageID })
         : "/placeholder.png";
@@ -46,12 +52,20 @@ export default function Detailied({recipe, setCurrentRecipeId}: DetailProps) {
                     <li key={index} className="text-black text-sm">{instruction}</li>
                 ))}
             </ol>
+            <div className="flex justify-around items-center w-full">
+            <button className="mt-4 bg-blue-950 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors" onClick={() => {
+                recipe._id ? deleteRecipe({ id: recipe._id }) : undefined
+                setCurrentRecipeId("");}
+        } >
+                <Trash2/>
+            </button>
             <button
                 onClick={() => setCurrentRecipeId("")}
                 className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
             >
-                Close
+                <X/>
             </button>
+            </div>
             </div>
     )
 }

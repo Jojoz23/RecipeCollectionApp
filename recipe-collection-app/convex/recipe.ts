@@ -8,6 +8,7 @@ export const addRecipe = mutation({
         instructions: v.array(v.string()),
         imageID: v.optional(v.string()),
         rating: v.number(),
+        deletable: v.optional(v.boolean())
     },
     handler: async (ctx, args) => {
 
@@ -17,6 +18,7 @@ export const addRecipe = mutation({
             instructions: args.instructions,
             imageID: args.imageID || null, // Allow imageID to be optional
             rating: args.rating,
+            deletable: args.deletable ?? true
         });
     }
 })
@@ -32,16 +34,24 @@ export const queryRecipes = query({
     }
 });
 
-export const recipeById = query({
-    args: { id: v.id("recipes") },
-    handler: async (ctx, args) => {
-        return await ctx.db.get(args.id);
-    }
-});
-
 export const getRecipeImage = query({
     args: { id: v.string() },
     handler: async (ctx, args) => {
         return await ctx.storage.getUrl(args.id);
         }
     });
+
+export const deleteRecipe = mutation({
+    args: { id: v.id("recipes") },
+    handler: async (ctx, args) => {
+        const recipe = await ctx.db.get(args.id);
+        
+        if (recipe.imageID && recipe.deletable) {
+            await ctx.storage.delete(recipe.imageID);
+        }
+        await ctx.db.delete(args.id);
+
+    }
+});
+
+

@@ -6,16 +6,18 @@ import { api } from "../convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import Card from "@/components/display";
 import Detail from "@/components/detail";
+import { Id } from "@/convex/_generated/dataModel";
 
 export default function Home() {
 
   interface Recipe {
-    _id?: string;
+    _id?: Id<"recipes">;
     title: string;
     ingredients: string[];
     instructions: string[];
     imageID?: string;
     rating: number;
+    deletable?: boolean;
   }
 
   const [recipeForm, setRecipeForm] = useState<boolean>(false);
@@ -40,6 +42,7 @@ export default function Home() {
     const formData = new FormData(e.target as HTMLFormElement);
 
     const url = await generateUploadUrl();
+    let deletable = true;
 
     let id = null;
     if (image) {
@@ -80,6 +83,8 @@ export default function Home() {
         id = placeholderId;
       }
 
+      deletable = false;
+
     }
 
     
@@ -93,6 +98,7 @@ export default function Home() {
       instructions: (formData.get("Instructions") as string).split(".").map(inst => inst.trim()),
       imageID: id,
       rating: Number(formData.get("Rating")),
+      deletable: deletable,
     };
 
     await addRecipe(newRecipe);
