@@ -54,4 +54,38 @@ export const deleteRecipe = mutation({
     }
 });
 
+export const editRecipe = mutation({
+    args: {
+        id: v.id("recipes"),
+        title: v.optional(v.string()),
+        ingredients: v.optional(v.array(v.string())),
+        instructions: v.optional(v.array(v.string())),
+        imageID: v.optional(v.string()),
+        rating: v.optional(v.number()),
+        deletable: v.optional(v.boolean())
+    },
+    handler: async (ctx , args) => {
+        const recipe = await ctx.db.get(args.id);
+        const { id, ...fields } = args;
+        const updateFields: Record<string, any> = {};
+        for (const key of Object.keys(fields)) {            
+            if ((fields as Record<string, any>)[key] !== undefined) {
+                updateFields[key] = (fields as Record<string, any>)[key];
+            }
+            
+            if (key == "imageID" && recipe.imageID && recipe.deletable){
+                await ctx.storage.delete(recipe.imageID);
+            }
 
+        }
+        await ctx.db.patch(id, updateFields);
+    }
+}
+)
+
+export const recipeById = query({
+    args: { id: v.optional(v.id("recipes")) },
+    handler: async (ctx, args) => {
+        return args.id? await ctx.db.get(args.id): null;
+    }
+})
